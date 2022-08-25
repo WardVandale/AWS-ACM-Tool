@@ -10,6 +10,4 @@ Create the assumerole cache using `assumerole ixor.tooling-admin [OTP]` and `ass
 Once you've done this, you should have the files in `~/.assumerole.d/cache`
 ### Run the script
 you can run the script with the following command: `bash ACM_Create.bash [account] [main domain] [extra_domain_1] [extra_domain_2] [extra_domain_x]`
-:::info
-when you have a domain like `*.ixor.be`, you need to put double quotes around it: `"*.ixor.be"`
-:::
+###### **when you have a domain like `*.ixor.be`, you need to put double quotes around it: `"*.ixor.be"`**
