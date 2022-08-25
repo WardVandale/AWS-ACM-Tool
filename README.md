@@ -18,8 +18,7 @@ this script will do the following things
 2. Check if the cache for ixor.tooling-admin and the other account exist
 3. Load the cached vars from the account you want to create the certificates on
 4. Create a certificate with the domain first given as main domain and the other domains as extra. these will be made in "eu-central-1" and "us-east-1"
-
-`Certificated for CloudFront must be created in "us-east-1"`
+`Certificates for CloudFront must be created in "us-east-1"`
 5. Wait 10 seconds to let the CNAME Names and CNAME Values generate. Once generated, it will save the names and values in vars
 6. Load the cached vars from ixor.tooling-admin (Account where the DNS-Entries are stored for validation)
 7. Load the hosted zones in this account in a var
