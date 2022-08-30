@@ -110,6 +110,13 @@ for (( i=0; i<${LEN}; i++ )); do
     [[ ${DNS_NAME} == *"${DOMAIN}." ]] && break
   done
 
+  # SOLUTION: TO BE APPROVED
+  # This code snippet will fetch the DNS_NAME and remove the first 34 characters (unique string)
+  # After that, it will remove the last character '.'
+  # Problems with this solution: static amount of characters are removed, what if there were to be more character in the CNAME NAME?
+  #
+  # DOMAIN=$(echo "${DNS_NAME:34}" | sed 's/.$//')
+
   if [[ ${HOSTED_ZONES} == *"${DOMAIN}"* ]]; then
     info "Hosted zone for ${DOMAIN} exists"
     if nslookup ${DNS_NAME} >/dev/null 2>&1; then
