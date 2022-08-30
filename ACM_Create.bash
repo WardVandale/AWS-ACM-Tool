@@ -104,18 +104,18 @@ for (( i=0; i<${LEN}; i++ )); do
   # This code is used to get the right domain. the issue that I had was that the DNS_NAMES are not in the same order as the arguments given
   # this resulted in the error that the script tried to create a DNS entry xxxxxx.aaa.ccc. in domain bbb.ccc.
   # Maybe this issue could be resolved by sorting the EXTRA_DOMS var?
-  for (( j=0; j<${DOM_LEN}; j++ )); do
-    DOMAIN=${DOMAINS[${j}]}
-    DOMAIN="${DOMAIN##\*\.}"
-    [[ ${DNS_NAME} == *"${DOMAIN}." ]] && break
-  done
+#  for (( j=0; j<${DOM_LEN}; j++ )); do
+#    DOMAIN=${DOMAINS[${j}]}
+#    DOMAIN="${DOMAIN##\*\.}"
+#    [[ ${DNS_NAME} == *"${DOMAIN}." ]] && break
+#  done
 
   # SOLUTION: TO BE APPROVED
   # This code snippet will fetch the DNS_NAME and remove the first 34 characters (unique string)
   # After that, it will remove the last character '.'
   # Problems with this solution: static amount of characters are removed, what if there were to be more character in the CNAME NAME?
   #
-  # DOMAIN=$(echo "${DNS_NAME:34}" | sed 's/.$//')
+  DOMAIN=$(echo "${DNS_NAME:34}" | sed 's/.$//')
 
   if [[ ${HOSTED_ZONES} == *"${DOMAIN}"* ]]; then
     info "Hosted zone for ${DOMAIN} exists"
