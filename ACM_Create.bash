@@ -102,6 +102,9 @@ for (( i=0; i<${LEN}; i++ )); do
   DNS_NAME=$(echo ${DNS_NAMES} | jq ".[${i}]") && DNS_NAME="${DNS_NAME%\"}" && DNS_NAME="${DNS_NAME#\"}"
   DNS_VALUE=$(echo ${DNS_VALUES} | jq ".[${i}]") DNS_VALUE="${DNS_VALUE%\"}" && DNS_VALUE="${DNS_VALUE#\"}"
   # Check if chosen DNS_NAME contains DOMAIN, if it does, break the loop ==> DOMAIN will be right
+  # This code is used to get the right domain. the issue that I had was that the DNS_NAMES are not in the same order as the arguments given
+  # this resulted in the error that the script tried to create a DNS entry xxxxxx.aaa.ccc. in domain bbb.ccc.
+  # Maybe this issue could be resolved by sorting the EXTRA_DOMS var?
   for (( j=0; j<${DOM_LEN}; j++ )); do
     DOMAIN=${DOMAINS[${j}]}
     DOMAIN="${DOMAIN##\*\.}"
