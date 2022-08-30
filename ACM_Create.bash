@@ -88,7 +88,6 @@ CERT_ARN_US_EAST_1=$(aws acm request-certificate --region us-east-1 --domain-nam
 info "Waiting for DNS Name and Value to generate"
 sleep 10
 DNS_NAMES=$(aws acm describe-certificate --certificate-arn ${CERT_ARN_EU_CENTRAL_1} --query "Certificate.DomainValidationOptions[].ResourceRecord.Name")
-echo ${DNS_NAMES}
 DNS_VALUES=$(aws acm describe-certificate --certificate-arn ${CERT_ARN_EU_CENTRAL_1} --query "Certificate.DomainValidationOptions[].ResourceRecord.Value")
 # Assuming ixor.tooling-admin role
 source ~/.assumerole.d/cache/ixor.tooling-admin
