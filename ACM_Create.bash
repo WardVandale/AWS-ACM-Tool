@@ -16,8 +16,8 @@ success() { printf "${green}✔ $*${reset}\n" 1>&2; }
 fail()    { printf "${red}✖ $*${reset}\n" 1>&2; exit 1; }
 debug()   { [[ "${DEBUG}" == "true" ]] && echo -e "${gray}DEBUG: $*${reset}\n"  1>&2 || true; }
 
+# Function to check if cache is valid
 checkCache()  {
-  # Check if cache is valid
   aws sts get-caller-identity >/dev/null 2>&1 &&
     # if the command sts get-caller-identity gives information, print a success message telling the cache is valid
     success "Cache for ${AWS_ACCOUNT} is valid" ||
@@ -29,8 +29,8 @@ checkCache()  {
 [[ -z ${1} ]] &&
   # if the first argument is empty, print the fail message and stop the script
   fail "First account (certificate account) is required" ||
-  # if the first argument is not empty, check if the argument starts with 'ixor.'.
-  [[ "${1}" == "ixor."* ]] &&
+  # if the first argument is not empty, check if the argument starts with *'.'.
+  [[ "${1}" == *"."* ]] &&
     # if it does, print an info message saying the argument is valid
     info "${1} is a valid certificate account" ||
     # if not, print a fail message and exit the script
