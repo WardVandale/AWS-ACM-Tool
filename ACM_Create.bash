@@ -18,32 +18,27 @@ debug()   { [[ "${DEBUG}" == "true" ]] && echo -e "${gray}DEBUG: $*${reset}\n"  
 
 # Function to check if cache is valid
 checkCache()  {
+  # Check if cache of assuming roles exist
+  source ~/.assumerole.d/cache/${1} &&
+    info "Cache for ${AWS_ACCOUNT} exists" ||
+    fail "Please issue 'assumerole ${1}' before running this script"
+
   aws sts get-caller-identity >/dev/null 2>&1 &&
-    # if the command sts get-caller-identity gives information, print a success message telling the cache is valid
     success "Cache for ${AWS_ACCOUNT} is valid" ||
-    # if the commands fails with an error, print a fail message and exit the script
     fail "Cache for ${AWS_ACCOUNT} is expired, please issue 'assumerole ${AWS_ACCOUNT}' to renew the cache"
  }
 
 # Check arguments
 [[ -z ${1} ]] &&
-  # if the first argument is empty, print the fail message and stop the script
   fail "First account (certificate account) is required" ||
-  # if the first argument is not empty, check if the argument starts with *'.'.
   [[ "${1}" == *"."* ]] &&
-    # if it does, print an info message saying the argument is valid
     info "${1} is a valid certificate account" ||
-    # if not, print a fail message and exit the script
     fail "${1} is not a valid certificate account, it should be 'ixor.*'"
 
 [[ -z ${2} ]] &&
-  # if the second argument is empty, print the fail message and stop the script
   fail "At least one domain is required, more are allowed (space separated)" ||
-  # if the second argument is not empty, check if the argument contains a '.'
   [[ "${2}" == *"."* ]] &&
-    # if it does, print an info message saying the domain is valid
     info "${2} is a valid domain" ||
-    # if not, print a fail message and exit the script
     fail "${2} is not a valid domain"
 
 # Create variables from arguments
@@ -53,38 +48,27 @@ MAIN_DOMAIN=${1}; shift
 # Check if EXTRA_OPTS are valid domains
 for DOM in $EXTRA_DOMS; do
   [[ "${DOM}" == *"."* ]] &&
-    # if the extra domain is valid, print a info message saying the domain is valid
     info "${DOM} is a valid domain" ||
-    # if not, print a fail message and exit the script
     fail "${DOM} is not a valid domain";
 done
 [[ -z ${EXTRA_DOMS} ]] &&
-  # if there are no extra domains given in the script, fill the EXTRA_OPTS var with ""
   EXTRA_OPTS="" ||
-  # if there are extra domains given, create the command argument used to add extra domains
   EXTRA_OPTS=" --subject-alternative-names ${EXTRA_DOMS}"
 
-# Check if cache of assuming roles exist
-source ~/.assumerole.d/cache/${ASSUMEROLE_TOOLING_ACCOUNT:-ixor.tooling-admin} &&
-  # if the cache of the ixor-tooling* account exists, print the info message
-  info "Cache for ${AWS_ACCOUNT} exists" ||
-  # if not, print a fail message and exit the script
-  fail "Please issue 'assumerole ixor.tooling*' before running this script"
+checkCache "${ASSUMEROLE_TOOLING_ACCOUNT:-ixor.tooling-admin}"
 
-checkCache
-
-source ~/.assumerole.d/cache/${CERT_ACCOUNT} &&
-  # if the cache of the account in argument exists, print the info message
-  info "Cache for ${AWS_ACCOUNT} exists" ||
-  # if not, print a fail message and exit the script
-  fail "Please issue 'assumerole ${CERT_ACCOUNT}' before running this script"
-
-checkCache
+checkCache "${CERT_ACCOUNT}"
 
 # Create certificate for CERT_ACCOUNT
 info "Creating Certificates in eu-central-1 and us-east-1"
-CERT_ARN_EU_CENTRAL_1=$(aws acm request-certificate --region eu-central-1 --domain-name ${MAIN_DOMAIN} --validation-method DNS ${EXTRA_OPTS} --output=text) && success "Created certificate in \"EU-CENTRAL-1\" region" || fail "Failed to create certificate in \"EU-CENTRAL-1\" region"
-CERT_ARN_US_EAST_1=$(aws acm request-certificate --region us-east-1 --domain-name ${MAIN_DOMAIN} --validation-method DNS ${EXTRA_OPTS} --output=text) && success "Created certificate in \"US-EAST-1\" region" || fail "Failed to create certificate in \"US-EAST-1\" region"
+CERT_ARN_EU_CENTRAL_1=$(aws acm request-certificate --region eu-central-1 --domain-name ${MAIN_DOMAIN} --validation-method DNS ${EXTRA_OPTS} --output=text) &&
+  success "Created certificate in \"EU-CENTRAL-1\" region" ||
+  fail "Failed to create certificate in \"EU-CENTRAL-1\" region"
+
+CERT_ARN_US_EAST_1=$(aws acm request-certificate --region us-east-1 --domain-name ${MAIN_DOMAIN} --validation-method DNS ${EXTRA_OPTS} --output=text) &&
+  success "Created certificate in \"US-EAST-1\" region" ||
+    fail "Failed to create certificate in \"US-EAST-1\" region"
+
 info "Waiting for DNS Name and Value to generate"
 sleep 10
 DNS_NAMES=$(aws acm describe-certificate --certificate-arn ${CERT_ARN_EU_CENTRAL_1} --query "Certificate.DomainValidationOptions[].ResourceRecord.Name")
@@ -94,28 +78,12 @@ source ~/.assumerole.d/cache/ixor.tooling-admin
 # Scan Route 53 for all hosted zones
 HOSTED_ZONES=$(aws route53 list-hosted-zones --query "HostedZones[].Name" --output=text)
 DOMAINS="${MAIN_DOMAIN} ${EXTRA_DOMS}"
-declare -a DOMAINS=(${DOMAINS})
-DOM_LEN="${#DOMAINS[@]}"
 LEN=$(echo ${DNS_NAMES} | jq '. | length ')
 for (( i=0; i<${LEN}; i++ )); do
-  DNS_NAME=$(echo ${DNS_NAMES} | jq ".[${i}]") && DNS_NAME="${DNS_NAME%\"}" && DNS_NAME="${DNS_NAME#\"}"
-  DNS_VALUE=$(echo ${DNS_VALUES} | jq ".[${i}]") DNS_VALUE="${DNS_VALUE%\"}" && DNS_VALUE="${DNS_VALUE#\"}"
-  # Check if chosen DNS_NAME contains DOMAIN, if it does, break the loop ==> DOMAIN will be right
-  # This code is used to get the right domain. the issue that I had was that the DNS_NAMES are not in the same order as the arguments given
-  # this resulted in the error that the script tried to create a DNS entry xxxxxx.aaa.ccc. in domain bbb.ccc.
-  # Maybe this issue could be resolved by sorting the EXTRA_DOMS var?
-#  for (( j=0; j<${DOM_LEN}; j++ )); do
-#    DOMAIN=${DOMAINS[${j}]}
-#    DOMAIN="${DOMAIN##\*\.}"
-#    [[ ${DNS_NAME} == *"${DOMAIN}." ]] && break
-#  done
+  DNS_NAME=$(echo ${DNS_NAMES} | jq -r ".[${i}]")
+  DNS_VALUE=$(echo ${DNS_VALUES} | jq -r ".[${i}]")
 
-  # SOLUTION: TO BE APPROVED
-  # This code snippet will fetch the DNS_NAME and remove the first 34 characters (unique string)
-  # After that, it will remove the last character '.'
-  # Problems with this solution: static amount of characters are removed, what if there were to be more character in the CNAME NAME?
-  #
-  DOMAIN=$(echo "${DNS_NAME:34}" | sed 's/.$//')
+  DOMAIN=$(echo "${DNS_NAME}" | awk -F. '{printf("%s.%s", $(NF-2), $(NF-1))}')
 
   if [[ ${HOSTED_ZONES} == *"${DOMAIN}"* ]]; then
     info "Hosted zone for ${DOMAIN} exists"
