@@ -87,12 +87,13 @@ for (( i=0; i<${LEN}; i++ )); do
 
   if [[ ${HOSTED_ZONES} == *"${DOMAIN}"* ]]; then
     info "Hosted zone for ${DOMAIN} exists"
-    if nslookup ${DNS_NAME} >/dev/null 2>&1; then
+    HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name ${DOMAIN} --query "HostedZones[0].Id" --output=text)
+    RESOURCE_RECORD_SETS=$(aws route53 list-resource-record-sets --hosted-zone-id ${HOSTED_ZONE_ID} --query "ResourceRecordSets[*].Name")
+    if [[ ${RESOURCE_RECORD_SETS} == *"${DOMAIN}"* ]]; then
       info "DNS Entry already exists for ${DOMAIN}, not creating it again"
     else
       error "No DNS Entry \"${DNS_NAME}\" found"
       info "Creating DNS Entry"
-      HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name ${DOMAIN} --query "HostedZones[0].Id" --output=text)
       #Creating .tmp.json file & creating DNS Entry
       echo "{\"Changes\": [{\"Action\": \"CREATE\",\"ResourceRecordSet\": {\"Name\": \"${DNS_NAME}\",\"Type\": \"CNAME\",\"TTL\": 300,\"ResourceRecords\": [{\"Value\": \"${DNS_VALUE}\"}]}}]}" > .tmp.json &&
       # when json has been successfully created, send success message
