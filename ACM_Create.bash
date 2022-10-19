@@ -74,7 +74,7 @@ sleep 10
 DNS_NAMES=$(aws acm describe-certificate --certificate-arn ${CERT_ARN_EU_CENTRAL_1} --query "Certificate.DomainValidationOptions[].ResourceRecord.Name")
 DNS_VALUES=$(aws acm describe-certificate --certificate-arn ${CERT_ARN_EU_CENTRAL_1} --query "Certificate.DomainValidationOptions[].ResourceRecord.Value")
 # Assuming ixor.tooling-admin role
-source ~/.assumerole.d/cache/ixor.tooling-admin
+source ~/.assumerole.d/cache/${ASSUMEROLE_TOOLING_ACCOUNT:-ixor.tooling-admin}
 # Scan Route 53 for all hosted zones
 HOSTED_ZONES=$(aws route53 list-hosted-zones --query "HostedZones[].Name" --output=text)
 DOMAINS="${MAIN_DOMAIN} ${EXTRA_DOMS}"
